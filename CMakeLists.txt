@@ -27,12 +27,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    src/main.c
-    src/system/syscalls.c
+        src/app/main.c
+        src/system/syscalls.c
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
-    stm32f401re
+        stm32f401re
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
