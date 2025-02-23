@@ -1,6 +1,8 @@
+#include "../platform/uart_serial_comms.h"
 #include <libopencm3/stm32/flash.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/rcc.h>
+#include <printf.h>
 
 void clock_setup(void)
 {
@@ -33,12 +35,14 @@ int main(void)
 
     // Set GPIO5 (LED) to 'output push-pull'
     gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
+    uart_serial_comms_init();
 
     while (1)
     {
         // Toggle LED on GPIO5
         gpio_toggle(GPIOA, GPIO5);
-        delay_ms(1000);
+        printf("hello from stm32\n");
+        delay_ms(200);
     }
 
     return 0;
