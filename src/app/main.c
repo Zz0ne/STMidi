@@ -1,17 +1,6 @@
-#include "../platform/uart_serial_comms.h"
-#include <libopencm3/stm32/flash.h>
-#include <libopencm3/stm32/gpio.h>
-#include <libopencm3/stm32/rcc.h>
+#include "../platform/platform.h"
 #include <printf.h>
-
-void clock_setup(void)
-{
-    flash_set_ws(FLASH_ACR_LATENCY_2WS);
-    flash_prefetch_enable();
-
-    // rcc_clock_setup_pll(&rcc_hse_8mhz_3v3[RCC_CLOCK_3V3_84MHZ]);
-    rcc_clock_setup_pll(&rcc_hsi_configs[RCC_CLOCK_3V3_84MHZ]);
-}
+#include <stdint.h>
 
 void delay_ms(uint32_t ms)
 {
@@ -29,18 +18,11 @@ void delay_ms(uint32_t ms)
 
 int main(void)
 {
-    clock_setup();
-    // Enable GPIOA clock (for LED)
-    rcc_periph_clock_enable(RCC_GPIOA);
-
-    // Set GPIO5 (LED) to 'output push-pull'
-    gpio_mode_setup(GPIOA, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO5);
-    uart_serial_comms_init();
+    platform_init();
 
     while (1)
     {
         // Toggle LED on GPIO5
-        gpio_toggle(GPIOA, GPIO5);
         printf("hello from stm32\n");
         delay_ms(200);
     }

@@ -29,7 +29,8 @@ target_include_directories(${PROJECT_NAME} PRIVATE)
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         src/app/main.c
         src/platform/uart_serial_comms.c
-        src/system/syscalls.c
+        src/platform/clock_setup.c
+        src/platform/platform.c
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
