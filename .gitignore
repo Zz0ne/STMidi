@@ -1,3 +1,7 @@
 .vscode
 .cache
 /build/
+
+STMidi/.cache
+STMidi/build
+compile_commands.json
