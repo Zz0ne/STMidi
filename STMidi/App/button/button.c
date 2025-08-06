@@ -6,7 +6,8 @@
 #define BUTTON_ACTIVE_HIGH          1
 
 #define LONG_PRESS_HOLD_TIME_MS     1500
-#define DOUBLE_PRESS_TIME_WINDOW_MS 1000
+#define DOUBLE_PRESS_TIME_WINDOW_MS 500
+#define DEBOUNCE_TIME_MS            50
 
 button_handle_t *_buttons[MAX_INTERRUPTS] = {NULL};
 
@@ -35,6 +36,7 @@ void button_init(button_handle_t *btn, GPIO_TypeDef *port, uint16_t pin)
     GPIO_PinState idle_state = HAL_GPIO_ReadPin(port, pin);
     btn->_active_level   = (idle_state == GPIO_PIN_SET) ? BUTTON_ACTIVE_LOW : BUTTON_ACTIVE_HIGH;
     btn->_state          = 0;
+    btn->_prev_state     = 0;
     btn->_pin            = pin;
     btn->_port           = port;
     btn->_released       = 0;
@@ -77,7 +79,7 @@ void button_interrupt_handler(uint16_t GPIO_Pin)
     {
         // Debounce
         uint32_t now = HAL_GetTick();
-        if (now - btn->_last_irq < 50)
+        if (now - btn->_last_irq < DEBOUNCE_TIME_MS)
             return;
         btn->_last_irq = now;
 
@@ -85,17 +87,21 @@ void button_interrupt_handler(uint16_t GPIO_Pin)
         GPIO_PinState pin_state = HAL_GPIO_ReadPin(btn->_port, btn->_pin);
         btn->_state = (btn->_active_level == BUTTON_ACTIVE_LOW) ? (pin_state == GPIO_PIN_RESET)
                                                                 : (pin_state == GPIO_PIN_SET);
+        if (btn->_prev_state == btn->_state)
+            return;
 
         if (btn->_state)
             btn->_pressed = 1;
         else
             btn->_released = 1;
+
+        btn->_prev_state = btn->_state;
     }
 }
 
 void button_poll(void)
 {
-    for (int pin = 0; pin < 16; pin++)
+    for (int pin = 0; pin < MAX_INTERRUPTS; pin++)
     {
         button_handle_t *btn = _buttons[pin];
         if (btn == NULL)
@@ -103,9 +109,9 @@ void button_poll(void)
 
         if (btn->_pressed)
         {
+            btn->_pressed        = 0;
             btn->_last_press     = HAL_GetTick();
             btn->_holding_button = 1;
-            btn->_pressed        = 0;
 
             _execute_event(btn, BUTTON_EVENT_PRESS);
 
@@ -127,8 +133,8 @@ void button_poll(void)
 
         if (btn->_released)
         {
-            btn->_holding_button = 0;
             btn->_released       = 0;
+            btn->_holding_button = 0;
             _execute_event(btn, BUTTON_EVENT_RELEASE);
         }
 

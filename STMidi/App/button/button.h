@@ -18,6 +18,7 @@ typedef struct
     GPIO_TypeDef *_port;
     uint16_t _pin;
     volatile uint8_t _state;
+    volatile uint8_t _prev_state;
     volatile uint8_t _released;
     volatile uint8_t _pressed;
     volatile uint32_t _last_irq;
