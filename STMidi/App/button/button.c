@@ -39,8 +39,8 @@ void button_init(button_handle_t *btn, GPIO_TypeDef *port, uint16_t pin)
     btn->_prev_state     = 0;
     btn->_pin            = pin;
     btn->_port           = port;
-    btn->_released       = 0;
-    btn->_pressed        = 0;
+    btn->_released_flag  = 0;
+    btn->_pressed_flag   = 0;
     btn->_last_irq       = 0;
     btn->_last_press     = 0;
     btn->_first_press    = 0;
@@ -91,9 +91,9 @@ void button_interrupt_handler(uint16_t GPIO_Pin)
             return;
 
         if (btn->_state)
-            btn->_pressed = 1;
+            btn->_pressed_flag = 1;
         else
-            btn->_released = 1;
+            btn->_released_flag = 1;
 
         btn->_prev_state = btn->_state;
     }
@@ -101,16 +101,25 @@ void button_interrupt_handler(uint16_t GPIO_Pin)
 
 void button_poll(void)
 {
+    uint32_t now = HAL_GetTick();
+
     for (int pin = 0; pin < MAX_INTERRUPTS; pin++)
     {
         button_handle_t *btn = _buttons[pin];
         if (btn == NULL)
             continue;
 
-        if (btn->_pressed)
+        // Expire stale first-press if the window has passed (prevents “poisoned” state)
+        if (btn->_first_press && (now - btn->_first_press) > DOUBLE_PRESS_TIME_WINDOW_MS)
         {
-            btn->_pressed        = 0;
-            btn->_last_press     = HAL_GetTick();
+            btn->_first_press  = 0;
+            btn->_second_press = 0;
+        }
+
+        if (btn->_pressed_flag)
+        {
+            btn->_pressed_flag   = 0;
+            btn->_last_press     = now;
             btn->_holding_button = 1;
 
             _execute_event(btn, BUTTON_EVENT_PRESS);
@@ -131,9 +140,9 @@ void button_poll(void)
             }
         }
 
-        if (btn->_released)
+        if (btn->_released_flag)
         {
-            btn->_released       = 0;
+            btn->_released_flag  = 0;
             btn->_holding_button = 0;
             _execute_event(btn, BUTTON_EVENT_RELEASE);
         }
@@ -141,11 +150,14 @@ void button_poll(void)
         if (btn->_holding_button)
         {
             // check for long press
-            if (HAL_GetTick() - btn->_last_press > LONG_PRESS_HOLD_TIME_MS)
+            if ((now - btn->_last_press) > LONG_PRESS_HOLD_TIME_MS)
             {
                 _execute_event(btn, BUTTON_EVENT_LONG_PRESS);
                 btn->_last_press     = 0;
                 btn->_holding_button = 0;
+
+                btn->_first_press    = 0;
+                btn->_second_press   = 0;
             }
         }
     }

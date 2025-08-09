@@ -19,8 +19,8 @@ typedef struct
     uint16_t _pin;
     volatile uint8_t _state;
     volatile uint8_t _prev_state;
-    volatile uint8_t _released;
-    volatile uint8_t _pressed;
+    volatile uint8_t _released_flag;
+    volatile uint8_t _pressed_flag;
     volatile uint32_t _last_irq;
     uint8_t _active_level;
 
